@@ -63,23 +63,37 @@ function MainContent() {
     try {
       setLoading(true);
       setError(null);
-      const endpoint = searchQuery ? 'everything' : 'top-headlines';
-      const params = searchQuery
-        ? {
-            q: searchQuery,
-            apiKey: import.meta.env.VITE_NEWS_API_KEY,
-            language: 'en',
-          }
-        : {
-            country: 'us',
-            category,
-            apiKey: import.meta.env.VITE_NEWS_API_KEY
-          };
+      
+      const endpoint = searchQuery ? 'search' : 'top-headlines';
+      const params = {
+        apikey: import.meta.env.VITE_GNEWS_API_KEY,
+        lang: 'en',
+        country: 'us',
+        max: 50
+      };
 
-      const response = await axios.get(`https://newsapi.org/v2/${endpoint}`, { params });
-      setArticles(response.data.articles);
+      if (searchQuery) {
+        params.q = searchQuery;
+      } else if (category !== 'general') {
+        params.category = category;
+      }
+
+      const response = await axios.get(`https://gnews.io/api/v4/${endpoint}`, { params });
+      
+      const formattedArticles = response.data.articles.map(article => ({
+        title: article.title,
+        description: article.description,
+        url: article.url,
+        urlToImage: article.image,
+        publishedAt: article.publishedAt,
+        source: { name: article.source.name },
+        author: article.source.name,
+        content: article.content
+      }));
+
+      setArticles(formattedArticles);
       setCurrentIndex(0);
-      addNotification(`Loaded ${response.data.articles.length} articles`, 'success');
+      addNotification(`Loaded ${formattedArticles.length} articles`, 'success');
     } catch (error) {
       setError('Failed to fetch news. Please try again later.');
       console.error('Error fetching news:', error);
